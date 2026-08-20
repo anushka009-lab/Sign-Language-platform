@@ -27,9 +27,15 @@ export function useMediaPipe(
 ) {
   const [lastResult, setLastResult] = useState<HandDetectionResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [fps, setFps] = useState<number>(0);
+  const [latencyMs, setLatencyMs] = useState<number>(0);
   const handsRef = useRef<any>(null);
   const animFrameRef = useRef<number>(0);
   const motionTrackersRef = useRef<MotionTracker[]>([new MotionTracker(), new MotionTracker()]);
+
+  // Performance tracking refs
+  const frameCountRef = useRef<number>(0);
+  const lastFpsTimeRef = useRef<number>(performance.now());
 
   const drawLandmarks = useCallback(
     (results: any) => {
@@ -157,8 +163,20 @@ export function useMediaPipe(
           if (cancelled) return;
           const video = videoRef.current;
           if (video && video.readyState >= 2 && handsRef.current) {
+            const startT = performance.now();
             try {
               await handsRef.current.send({ image: video });
+              const elapsed = performance.now() - startT;
+              setLatencyMs(Math.round(elapsed));
+
+              // FPS Calculation
+              frameCountRef.current++;
+              const now = performance.now();
+              if (now - lastFpsTimeRef.current >= 1000) {
+                setFps(Math.round((frameCountRef.current * 1000) / (now - lastFpsTimeRef.current)));
+                frameCountRef.current = 0;
+                lastFpsTimeRef.current = now;
+              }
             } catch (e) {
               // continue frame detection silently
             }
@@ -184,5 +202,5 @@ export function useMediaPipe(
     };
   }, [enabled, drawLandmarks, videoRef]);
 
-  return { lastResult, isLoading };
+  return { lastResult, isLoading, fps, latencyMs };
 }

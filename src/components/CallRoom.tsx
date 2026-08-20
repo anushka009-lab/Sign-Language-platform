@@ -16,6 +16,9 @@ import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useWebRTC } from '../hooks/useWebRTC';
 import { classifySign, classifyTwoHandSign, SignBuffer } from '../ml/signClassifier';
 import type { SignPrediction } from '../ml/signClassifier';
+import { SentenceBuffer } from '../ml/sentenceBuffer';
+import { VoiceSelector, VoiceProfile } from './VoiceSelector';
+import { CallSummaryModal } from './CallSummaryModal';
 import SignGuide from './SignGuide';
 import LandmarkDebugger from './LandmarkDebugger';
 
@@ -46,6 +49,16 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
   const [showConnectionToast, setShowConnectionToast] = useState(false);
   const [showSignGuide, setShowSignGuide] = useState(false);
   const [showDebugger, setShowDebugger] = useState(false);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+
+  const [voiceProfile, setVoiceProfile] = useState<VoiceProfile>({
+    voiceName: '',
+    pitch: 1.0,
+    rate: 1.0,
+    gender: 'neutral',
+    lang: 'en-US',
+  });
 
   // ---- Refs ----
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -53,12 +66,13 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
   const landmarkCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const transcriptEndRef = useRef<HTMLDivElement | null>(null);
   const signBufferRef = useRef(new SignBuffer(12, 0.55));
+  const sentenceBufferRef = useRef(new SentenceBuffer(20, 1200));
   const lastSignRef = useRef<string>('');
   const lastSignTimeRef = useRef<number>(0);
   const prevRemoteMessagesLenRef = useRef(0);
 
   // ---- Hooks ----
-  const { lastResult, isLoading: isMediaPipeLoading } = useMediaPipe(
+  const { lastResult, isLoading: isMediaPipeLoading, fps, latencyMs } = useMediaPipe(
     localVideoRef,
     landmarkCanvasRef,
     isHandDetection && isCamOn
@@ -203,9 +217,10 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
           lastSignRef.current = smoothed.sign;
           lastSignTimeRef.current = now;
 
+          sentenceBufferRef.current.addToken(smoothed.sign, smoothed.confidence);
+
           setSignSentence((prev) => {
             const next = [...prev, smoothed.sign];
-            // Keep last 10 signs
             return next.slice(-10);
           });
 
@@ -298,15 +313,25 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
 
   // ---- Speak sign sentence via TTS ----
   const speakSentence = useCallback(() => {
-    if (signSentence.length === 0) return;
-    const text = signSentence.join(' ');
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-    speechSynthesis.speak(utterance);
+    const compiled = sentenceBufferRef.current.compileSentence();
+    const textToSpeak = compiled || signSentence.join(' ');
+    if (!textToSpeak) return;
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      const availableVoices = window.speechSynthesis.getVoices();
+      const selected = availableVoices.find((v) => v.name === voiceProfile.voiceName);
+      if (selected) utterance.voice = selected;
+      utterance.rate = voiceProfile.rate;
+      utterance.pitch = voiceProfile.pitch;
+      window.speechSynthesis.speak(utterance);
+    }
+
     setSignSentence([]);
+    sentenceBufferRef.current.clear();
     signBufferRef.current.clear();
-  }, [signSentence]);
+  }, [signSentence, voiceProfile]);
 
   // ---- Copy room ID ----
   const copyRoomId = useCallback(() => {
@@ -314,12 +339,8 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
   }, [config.roomId]);
 
   // ---- Determine subtitle text ----
-  // DHH users see speech-to-text from the remote hearing user
-  // In connected mode, show remote speech messages
-  // In demo mode, fall back to local interimTranscript
   const subtitleText = useMemo(() => {
     if (config.userMode === 'hearing') {
-      // Hearing user: show incoming sign translations from DHH peer
       if (remoteMessages.length > 0) {
         const lastSignMsg = [...remoteMessages]
           .reverse()
@@ -331,7 +352,6 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
       return '';
     }
 
-    // DHH user: show incoming speech from hearing peer
     if (remoteMessages.length > 0) {
       const lastSpeechMsg = [...remoteMessages]
         .reverse()
@@ -341,7 +361,6 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
       }
     }
 
-    // Fallback: own interim transcript (demo mode)
     return interimTranscript || '';
   }, [config.userMode, interimTranscript, remoteMessages]);
 
@@ -421,6 +440,34 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
               muted
               style={{ transform: 'scaleX(-1)' }}
             />
+
+            {/* Performance Metric Badge */}
+            {isHandDetection && isCamOn && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '1rem',
+                  right: '1rem',
+                  background: 'rgba(15, 23, 42, 0.8)',
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: '0.75rem',
+                  fontSize: '0.75rem',
+                  color: '#94a3b8',
+                  backdropFilter: 'blur(6px)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  zIndex: 6,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}
+              >
+                <span style={{ color: fps >= 25 ? '#10b981' : '#f59e0b', fontWeight: 700 }}>
+                  {fps} FPS
+                </span>
+                <span>•</span>
+                <span>{latencyMs}ms</span>
+              </div>
+            )}
 
             {/* Landmark overlay canvas */}
             {isHandDetection && (
@@ -642,13 +689,19 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
                       marginBottom: '0.75rem',
                     }}
                   >
-                    Pipeline Status
+                    Pipeline Status & Performance
                   </h3>
                   <div style={{ color: 'var(--text-secondary)', lineHeight: 2 }}>
                     <div>
                       🖐️ Hand Detection:{' '}
                       <span style={{ color: isHandDetection ? 'var(--success)' : 'var(--text-tertiary)' }}>
-                        {isHandDetection ? (isMediaPipeLoading ? 'Loading...' : 'Active') : 'Off'}
+                        {isHandDetection ? (isMediaPipeLoading ? 'Loading...' : `Active (${fps} FPS)`) : 'Off'}
+                      </span>
+                    </div>
+                    <div>
+                      ⏱️ Frame Latency:{' '}
+                      <span style={{ color: latencyMs <= 30 ? 'var(--success)' : 'var(--warning)' }}>
+                        {latencyMs} ms
                       </span>
                     </div>
                     <div>
@@ -677,10 +730,6 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
                           ? 'Connecting...'
                           : 'Disconnected'}
                       </span>
-                    </div>
-                    <div>
-                      🤖 Sign Classifier:{' '}
-                      <span style={{ color: 'var(--text-accent)' }}>Rule-based (v0.1)</span>
                     </div>
                   </div>
                 </div>
@@ -720,6 +769,29 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
         onClose={() => setShowDebugger(false)}
         handResult={lastResult}
         currentSign={currentSign}
+      />
+
+      {/* ---- AI Voice Settings Modal ---- */}
+      <VoiceSelector
+        isOpen={showVoiceModal}
+        onClose={() => setShowVoiceModal(false)}
+        currentProfile={voiceProfile}
+        onProfileChange={setVoiceProfile}
+      />
+
+      {/* ---- Post-Call Summary Modal ---- */}
+      <CallSummaryModal
+        isOpen={showSummaryModal}
+        onClose={() => setShowSummaryModal(false)}
+        messages={transcript.map((t) => ({
+          id: t.id,
+          sender: t.sender,
+          type: t.type,
+          text: t.text,
+          timestamp: t.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        }))}
+        roomToken={config.roomId}
+        durationSeconds={callDuration}
       />
 
       {/* ---- Controls Bar ---- */}
@@ -772,6 +844,26 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
           )}
 
           <button
+            id="toggle-voice-settings"
+            className="btn btn--secondary btn--icon-sm"
+            onClick={() => setShowVoiceModal(true)}
+            title="AI Voice & TTS Settings"
+            aria-label="Voice settings"
+          >
+            🎙️
+          </button>
+
+          <button
+            id="toggle-summary-modal"
+            className="btn btn--secondary btn--icon-sm"
+            onClick={() => setShowSummaryModal(true)}
+            title="Call Minutes & Summary"
+            aria-label="Call summary"
+          >
+            📋
+          </button>
+
+          <button
             id="toggle-sign-guide"
             className={`btn btn--icon-sm ${showSignGuide ? 'btn--success' : 'btn--secondary'}`}
             onClick={() => setShowSignGuide((v) => !v)}
@@ -797,7 +889,13 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
         <button
           id="leave-call"
           className="btn btn--danger btn--icon"
-          onClick={onLeave}
+          onClick={() => {
+            if (transcript.length > 0) {
+              setShowSummaryModal(true);
+            } else {
+              onLeave();
+            }
+          }}
           title="Leave call"
           aria-label="Leave call"
         >
