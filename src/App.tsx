@@ -5,10 +5,11 @@ import LearnPage from './components/LearnPage';
 import PracticePage from './components/PracticePage';
 import GestureStudio from './components/GestureStudio';
 import { GestureCalibration } from './components/GestureCalibration';
+import { CallSummaryModal } from './components/CallSummaryModal';
 
 export type UserMode = 'deaf' | 'hearing';
 
-export type AppView = 'landing' | 'calibration' | 'call' | 'learn' | 'practice' | 'studio';
+export type AppView = 'landing' | 'calibration' | 'call' | 'learn' | 'practice' | 'studio' | 'summary';
 
 export interface CallConfig {
   roomId: string;
@@ -56,6 +57,13 @@ export default function App() {
         <PracticePage onBack={() => handleNavigate('landing')} onLearn={() => handleNavigate('learn')} />
       ) : currentView === 'studio' ? (
         <GestureStudio onBack={() => handleNavigate('landing')} onNavigate={handleNavigate} />
+      ) : currentView === 'summary' ? (
+        <CallSummaryModal
+          isOpen={true}
+          isStandaloneDashboard={true}
+          onClose={() => handleNavigate('landing')}
+          roomToken={callConfig?.roomId || 'sb-call-892'}
+        />
       ) : (
         <LandingPage onJoin={handleStartCalibration} onNavigate={handleNavigate} />
       )}
