@@ -8,10 +8,11 @@ import { GestureCalibration } from './components/GestureCalibration';
 import { CallSummaryModal } from './components/CallSummaryModal';
 import { UserDashboard } from './components/UserDashboard';
 import { PipWidget } from './components/PipWidget';
+import { SignSandbox } from './components/SignSandbox';
 
 export type UserMode = 'deaf' | 'hearing';
 
-export type AppView = 'landing' | 'dashboard' | 'calibration' | 'call' | 'learn' | 'practice' | 'studio' | 'summary';
+export type AppView = 'landing' | 'dashboard' | 'calibration' | 'call' | 'learn' | 'practice' | 'sandbox' | 'studio' | 'summary';
 
 export interface CallConfig {
   roomId: string;
@@ -63,6 +64,8 @@ export default function App() {
         <LearnPage onBack={() => handleNavigate('dashboard')} onPractice={() => handleNavigate('practice')} />
       ) : currentView === 'practice' ? (
         <PracticePage onBack={() => handleNavigate('dashboard')} onLearn={() => handleNavigate('learn')} />
+      ) : currentView === 'sandbox' ? (
+        <SignSandbox onBack={() => handleNavigate('dashboard')} />
       ) : currentView === 'studio' ? (
         <GestureStudio onBack={() => handleNavigate('dashboard')} onNavigate={handleNavigate} />
       ) : currentView === 'summary' ? (
