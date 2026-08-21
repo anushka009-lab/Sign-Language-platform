@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { CallConfig, UserMode, AppView } from '../App';
+import { VoiceSelector, VoiceProfile } from './VoiceSelector';
 
 interface LandingPageProps {
   onJoin: (config: CallConfig) => void;
@@ -10,6 +11,14 @@ export default function LandingPage({ onJoin, onNavigate }: LandingPageProps) {
   const [roomId, setRoomId] = useState('');
   const [userName, setUserName] = useState('');
   const [userMode, setUserMode] = useState<UserMode>('deaf');
+  const [showVoiceDrawer, setShowVoiceDrawer] = useState(false);
+  const [voiceProfile, setVoiceProfile] = useState<VoiceProfile>({
+    voiceName: 'Alex (Natural Warm - English US)',
+    pitch: 1.0,
+    rate: 1.0,
+    gender: 'male',
+    lang: 'en-US',
+  });
 
   const generateRoomId = () => {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -44,7 +53,7 @@ export default function LandingPage({ onJoin, onNavigate }: LandingPageProps) {
         Connect deaf and hearing users through seamless video calls.
       </p>
 
-      {/* ---- Learn, Practice & Gesture Studio Navigation ---- */}
+      {/* ---- Learn, Practice, Gesture Studio & Voice Drawer Navigation ---- */}
       <div className="landing__nav-cards">
         <button
           className="nav-card nav-card--learn"
@@ -84,7 +93,31 @@ export default function LandingPage({ onJoin, onNavigate }: LandingPageProps) {
           </div>
           <span className="nav-card__arrow">→</span>
         </button>
+
+        <button
+          className="nav-card"
+          onClick={() => setShowVoiceDrawer(true)}
+          id="nav-voice"
+          style={{
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(217, 70, 239, 0.15))',
+            borderColor: 'rgba(168, 85, 247, 0.35)',
+          }}
+        >
+          <div className="nav-card__icon">🎙️</div>
+          <div className="nav-card__content">
+            <h2 className="nav-card__title">AI Voice Studio</h2>
+            <p className="nav-card__desc">Customize pitch, rate & voice profile (Alex, Sophia, Marcus)</p>
+          </div>
+          <span className="nav-card__arrow">→</span>
+        </button>
       </div>
+
+      <VoiceSelector
+        isOpen={showVoiceDrawer}
+        onClose={() => setShowVoiceDrawer(false)}
+        currentProfile={voiceProfile}
+        onProfileChange={setVoiceProfile}
+      />
 
       {/* ---- Call Actions ---- */}
       <div className="landing__actions">

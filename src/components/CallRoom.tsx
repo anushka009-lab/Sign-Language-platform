@@ -40,6 +40,7 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
   const [isMicOn, setIsMicOn] = useState(true);
   const [isCamOn, setIsCamOn] = useState(true);
   const [isHandDetection, setIsHandDetection] = useState(config.userMode === 'deaf');
+  const [isVoiceSynthActive, setIsVoiceSynthActive] = useState(true);
   const [currentSign, setCurrentSign] = useState<SignPrediction | null>(null);
   const [signSentence, setSignSentence] = useState<string[]>([]);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
@@ -416,6 +417,29 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
             <span>📋</span>
             <span>{config.roomId}</span>
           </button>
+
+          <button
+            className="voice-profile-header-btn"
+            onClick={() => setShowVoiceModal(true)}
+            title="Configure AI Voice Profile & Speech Settings"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.35rem 0.75rem',
+              borderRadius: '9999px',
+              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2))',
+              border: '1px solid rgba(99, 102, 241, 0.4)',
+              color: '#a5b4fc',
+              fontSize: '0.775rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <span>🎙️</span>
+            <span>{voiceProfile.voiceName || 'Alex (Natural Warm - English US)'}</span>
+          </button>
         </div>
 
         <div className="call-room__status">
@@ -574,10 +598,32 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
               </div>
             )}
 
-            {/* Subtitle overlay (shown on remote video) */}
+            {/* Glassmorphic closed-caption container with active streaming word highlight */}
             {subtitleText && (
               <div className="subtitle-overlay">
-                <div className="subtitle-overlay__text">{subtitleText}</div>
+                <div className="subtitle-overlay__container">
+                  <div className="subtitle-overlay__badge">
+                    <span className="subtitle-overlay__dot" />
+                    <span>
+                      {config.userMode === 'hearing'
+                        ? '🤟 Live Sign Translation'
+                        : '🎙️ Live Speech Subtitles'}
+                    </span>
+                  </div>
+                  <div className="subtitle-overlay__text">
+                    {subtitleText.trim().split(/\s+/).map((word, idx, arr) => {
+                      const isLastWord = idx === arr.length - 1;
+                      return (
+                        <span
+                          key={`${word}-${idx}`}
+                          className={`subtitle-word ${isLastWord ? 'subtitle-word--active' : ''}`}
+                        >
+                          {word}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -794,27 +840,59 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
         durationSeconds={callDuration}
       />
 
-      {/* ---- Controls Bar ---- */}
-      <footer className="controls-bar">
+      {/* ---- Floating Controls Dock ---- */}
+      <footer className="controls-bar" aria-label="Floating call controls dock">
         <div className="controls-bar__group">
+          {/* Mute Mic Circular Button */}
           <button
             id="toggle-mic"
-            className={`btn btn--icon ${!isMicOn ? 'btn--toggled-off' : 'btn--secondary'}`}
+            className={`dock-circle-btn ${!isMicOn ? 'dock-circle-btn--off' : ''}`}
             onClick={toggleMic}
-            title={isMicOn ? 'Mute microphone' : 'Unmute microphone'}
-            aria-label={isMicOn ? 'Mute microphone' : 'Unmute microphone'}
+            title={isMicOn ? 'Mute Microphone' : 'Unmute Microphone'}
+            aria-label={isMicOn ? 'Mute Microphone' : 'Unmute Microphone'}
           >
             {isMicOn ? '🎤' : '🔇'}
           </button>
 
+          {/* Camera Toggle Circular Button */}
           <button
             id="toggle-cam"
-            className={`btn btn--icon ${!isCamOn ? 'btn--toggled-off' : 'btn--secondary'}`}
+            className={`dock-circle-btn ${!isCamOn ? 'dock-circle-btn--off' : ''}`}
             onClick={toggleCam}
             title={isCamOn ? 'Turn off camera' : 'Turn on camera'}
             aria-label={isCamOn ? 'Turn off camera' : 'Turn on camera'}
           >
             {isCamOn ? '📹' : '📷'}
+          </button>
+
+          {/* AI Voice Synthesizer Switch (with active pulsing audio indicator visualizer) */}
+          <button
+            id="toggle-voice-synth"
+            className={`dock-circle-btn ${isVoiceSynthActive ? 'dock-circle-btn--synth-active' : 'dock-circle-btn--off'}`}
+            onClick={() => setIsVoiceSynthActive((v) => !v)}
+            title={isVoiceSynthActive ? 'AI Voice Synthesizer Active (Click to toggle)' : 'Enable AI Voice Synthesizer'}
+            aria-label="AI Voice Synthesizer Switch"
+          >
+            <span>🗣️</span>
+            {isVoiceSynthActive && (
+              <div className="pulsing-audio-indicator" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+                <span />
+              </div>
+            )}
+          </button>
+
+          {/* Settings Cog */}
+          <button
+            id="toggle-voice-settings"
+            className="dock-circle-btn"
+            onClick={() => setShowVoiceModal(true)}
+            title="Settings & AI Voice Configuration"
+            aria-label="Settings cog"
+          >
+            ⚙️
           </button>
         </div>
 
@@ -823,7 +901,7 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
         <div className="controls-bar__group">
           <button
             id="toggle-hand-detection"
-            className={`btn btn--icon-sm ${isHandDetection ? 'btn--success' : 'btn--secondary'}`}
+            className={`dock-circle-btn ${isHandDetection ? 'dock-circle-btn--active' : ''}`}
             onClick={() => setIsHandDetection((v) => !v)}
             title={isHandDetection ? 'Disable hand detection' : 'Enable hand detection'}
             aria-label={isHandDetection ? 'Disable hand detection' : 'Enable hand detection'}
@@ -834,7 +912,7 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
           {config.userMode === 'deaf' && signSentence.length > 0 && (
             <button
               id="speak-sentence"
-              className="btn btn--secondary btn--icon-sm"
+              className="dock-circle-btn dock-circle-btn--active"
               onClick={speakSentence}
               title="Speak detected sentence via TTS"
               aria-label="Speak detected sentence via text-to-speech"
@@ -844,18 +922,8 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
           )}
 
           <button
-            id="toggle-voice-settings"
-            className="btn btn--secondary btn--icon-sm"
-            onClick={() => setShowVoiceModal(true)}
-            title="AI Voice & TTS Settings"
-            aria-label="Voice settings"
-          >
-            🎙️
-          </button>
-
-          <button
             id="toggle-summary-modal"
-            className="btn btn--secondary btn--icon-sm"
+            className="dock-circle-btn"
             onClick={() => setShowSummaryModal(true)}
             title="Call Minutes & Summary"
             aria-label="Call summary"
@@ -865,7 +933,7 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
 
           <button
             id="toggle-sign-guide"
-            className={`btn btn--icon-sm ${showSignGuide ? 'btn--success' : 'btn--secondary'}`}
+            className={`dock-circle-btn ${showSignGuide ? 'dock-circle-btn--active' : ''}`}
             onClick={() => setShowSignGuide((v) => !v)}
             title="Sign language reference guide"
             aria-label="Toggle sign language guide"
@@ -875,7 +943,7 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
 
           <button
             id="toggle-debugger"
-            className={`btn btn--icon-sm ${showDebugger ? 'btn--success' : 'btn--secondary'}`}
+            className={`dock-circle-btn ${showDebugger ? 'dock-circle-btn--active' : ''}`}
             onClick={() => setShowDebugger((v) => !v)}
             title="Landmark coordinate debugger"
             aria-label="Toggle landmark debugger"
@@ -886,9 +954,10 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
 
         <div className="controls-bar__divider" />
 
+        {/* End Call Circular Button (Red) */}
         <button
           id="leave-call"
-          className="btn btn--danger btn--icon"
+          className="dock-circle-btn dock-circle-btn--danger"
           onClick={() => {
             if (transcript.length > 0) {
               setShowSummaryModal(true);
@@ -896,8 +965,8 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
               onLeave();
             }
           }}
-          title="Leave call"
-          aria-label="Leave call"
+          title="End Call"
+          aria-label="End Call"
         >
           📞
         </button>

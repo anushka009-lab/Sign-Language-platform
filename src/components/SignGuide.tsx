@@ -24,6 +24,7 @@ const CATEGORY_LABELS: Record<CategoryFilter, { label: string; emoji: string }> 
   number: { label: 'Numbers', emoji: '🔢' },
   letter: { label: 'Letters', emoji: '🔤' },
   gesture: { label: 'Gestures', emoji: '🤙' },
+  'two-handed': { label: 'Two-Handed', emoji: '🙌' },
 };
 
 const DIFFICULTY_COLORS: Record<SignInfo['difficulty'], string> = {

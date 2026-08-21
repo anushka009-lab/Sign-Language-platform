@@ -67,14 +67,14 @@ export function useMediaPipe(
 
           const colorScheme =
             handIdx === 0
-              ? { line: 'rgba(99, 102, 241, 0.8)', point: 'rgba(165, 180, 252, 0.95)', glow: 'rgba(99, 102, 241, 0.4)' }
-              : { line: 'rgba(236, 72, 153, 0.8)', point: 'rgba(244, 114, 182, 0.95)', glow: 'rgba(236, 72, 153, 0.4)' };
+              ? { line: 'rgba(6, 182, 212, 0.8)', point: 'rgba(56, 189, 248, 0.95)', glow: 'rgba(6, 182, 212, 0.5)' }
+              : { line: 'rgba(59, 130, 246, 0.8)', point: 'rgba(147, 197, 253, 0.95)', glow: 'rgba(59, 130, 246, 0.5)' };
 
-          // Draw skeleton lines
+          // Draw subtle, non-intrusive cyan/blue skeleton lines
           ctx.strokeStyle = colorScheme.line;
-          ctx.lineWidth = 3;
+          ctx.lineWidth = 2.2;
           ctx.shadowColor = colorScheme.glow;
-          ctx.shadowBlur = 8;
+          ctx.shadowBlur = 6;
 
           for (const [i, j] of connections) {
             const a = landmarks[i];
@@ -85,15 +85,15 @@ export function useMediaPipe(
             ctx.stroke();
           }
 
-          // Draw keypoints
-          ctx.shadowBlur = 0;
+          // Draw keypoint joint nodes
+          ctx.shadowBlur = 4;
           for (let k = 0; k < landmarks.length; k++) {
             const lm = landmarks[k];
             ctx.beginPath();
-            ctx.arc(lm.x * canvas.width, lm.y * canvas.height, k === 0 || k % 4 === 0 ? 5 : 3.5, 0, 2 * Math.PI);
+            ctx.arc(lm.x * canvas.width, lm.y * canvas.height, k === 0 || k % 4 === 0 ? 4.5 : 3, 0, 2 * Math.PI);
             ctx.fillStyle = colorScheme.point;
             ctx.fill();
-            ctx.strokeStyle = '#ffffff';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
             ctx.lineWidth = 1;
             ctx.stroke();
           }
