@@ -699,8 +699,8 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
                     {currentSign?.sign
                       ? `Translation: "${currentSign.sign}" (98% confidence)`
                       : signSentence.length > 0
-                      ? `Translation: "${signSentence.join(' ')}"`
-                      : 'Live Translation: "Hello! Welcome to SignBridge video call."'}
+                        ? `Translation: "${signSentence.join(' ')}"`
+                        : 'Live Translation: "Hello! Welcome to SignBridge video call."'}
                   </span>
                 </div>
                 <span
@@ -878,11 +878,10 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
                 {transcript.map((entry) => (
                   <div
                     key={entry.id}
-                    className={`transcript-msg ${
-                      entry.sender === config.userName
+                    className={`transcript-msg ${entry.sender === config.userName
                         ? 'transcript-msg--local'
                         : 'transcript-msg--remote'
-                    }`}
+                      }`}
                   >
                     <div className="transcript-msg__sender">
                       {entry.type === 'sign' ? '🤟' : '🎤'} {entry.sender}
@@ -974,17 +973,17 @@ export default function CallRoom({ config, onLeave }: CallRoomProps) {
                             connectionStatus === 'connected'
                               ? 'var(--success)'
                               : connectionStatus === 'disconnected'
-                              ? 'var(--danger)'
-                              : 'var(--warning)',
+                                ? 'var(--danger)'
+                                : 'var(--warning)',
                         }}
                       >
                         {connectionStatus === 'connected'
                           ? 'Connected (P2P)'
                           : connectionStatus === 'waiting'
-                          ? 'Waiting for peer'
-                          : connectionStatus === 'connecting'
-                          ? 'Connecting...'
-                          : 'Disconnected'}
+                            ? 'Waiting for peer'
+                            : connectionStatus === 'connecting'
+                              ? 'Connecting...'
+                              : 'Disconnected'}
                       </span>
                     </div>
                   </div>
