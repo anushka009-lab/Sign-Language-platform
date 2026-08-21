@@ -6,10 +6,11 @@ import PracticePage from './components/PracticePage';
 import GestureStudio from './components/GestureStudio';
 import { GestureCalibration } from './components/GestureCalibration';
 import { CallSummaryModal } from './components/CallSummaryModal';
+import { UserDashboard } from './components/UserDashboard';
 
 export type UserMode = 'deaf' | 'hearing';
 
-export type AppView = 'landing' | 'calibration' | 'call' | 'learn' | 'practice' | 'studio' | 'summary';
+export type AppView = 'landing' | 'dashboard' | 'calibration' | 'call' | 'learn' | 'practice' | 'studio' | 'summary';
 
 export interface CallConfig {
   roomId: string;
@@ -18,7 +19,7 @@ export interface CallConfig {
 }
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<AppView>('landing');
+  const [currentView, setCurrentView] = useState<AppView>('dashboard');
   const [callConfig, setCallConfig] = useState<CallConfig | null>(null);
 
   // Transition from landing -> calibration screen before joining meeting
@@ -33,7 +34,7 @@ export default function App() {
 
   const handleLeaveCall = () => {
     setCallConfig(null);
-    setCurrentView('landing');
+    setCurrentView('dashboard');
   };
 
   const handleNavigate = (view: AppView) => {
@@ -43,25 +44,30 @@ export default function App() {
   return (
     <>
       <div className="app-bg" aria-hidden="true" />
-      {currentView === 'calibration' && callConfig ? (
+      {currentView === 'dashboard' ? (
+        <UserDashboard
+          onStartCall={handleStartCalibration}
+          onNavigate={handleNavigate}
+        />
+      ) : currentView === 'calibration' && callConfig ? (
         <GestureCalibration
           config={callConfig}
           onJoinMeeting={handleConfirmJoinCall}
-          onBack={() => setCurrentView('landing')}
+          onBack={() => setCurrentView('dashboard')}
         />
       ) : currentView === 'call' && callConfig ? (
         <CallRoom config={callConfig} onLeave={handleLeaveCall} />
       ) : currentView === 'learn' ? (
-        <LearnPage onBack={() => handleNavigate('landing')} onPractice={() => handleNavigate('practice')} />
+        <LearnPage onBack={() => handleNavigate('dashboard')} onPractice={() => handleNavigate('practice')} />
       ) : currentView === 'practice' ? (
-        <PracticePage onBack={() => handleNavigate('landing')} onLearn={() => handleNavigate('learn')} />
+        <PracticePage onBack={() => handleNavigate('dashboard')} onLearn={() => handleNavigate('learn')} />
       ) : currentView === 'studio' ? (
-        <GestureStudio onBack={() => handleNavigate('landing')} onNavigate={handleNavigate} />
+        <GestureStudio onBack={() => handleNavigate('dashboard')} onNavigate={handleNavigate} />
       ) : currentView === 'summary' ? (
         <CallSummaryModal
           isOpen={true}
           isStandaloneDashboard={true}
-          onClose={() => handleNavigate('landing')}
+          onClose={() => handleNavigate('dashboard')}
           roomToken={callConfig?.roomId || 'sb-call-892'}
         />
       ) : (
