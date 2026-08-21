@@ -110,6 +110,23 @@ export default function LandingPage({ onJoin, onNavigate }: LandingPageProps) {
           </div>
           <span className="nav-card__arrow">→</span>
         </button>
+
+        <button
+          className="nav-card"
+          onClick={() => onNavigate('calibration')}
+          id="nav-calibration"
+          style={{
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.15))',
+            borderColor: 'rgba(16, 185, 129, 0.35)',
+          }}
+        >
+          <div className="nav-card__icon">⚙️</div>
+          <div className="nav-card__content">
+            <h2 className="nav-card__title">Pre-Call Calibration</h2>
+            <p className="nav-card__desc">Hardware check, diagnostic meters & silhouette alignment</p>
+          </div>
+          <span className="nav-card__arrow">→</span>
+        </button>
       </div>
 
       <VoiceSelector
