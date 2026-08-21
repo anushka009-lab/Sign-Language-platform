@@ -197,6 +197,14 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             >
               <span>📊</span> Analytics
             </button>
+
+            <button
+              className="dashboard-nav-item"
+              onClick={() => onNavigate('accessibility')}
+              id="nav-tab-accessibility"
+            >
+              <span>♿</span> Accessibility
+            </button>
           </nav>
         </div>
 

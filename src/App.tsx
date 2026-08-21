@@ -9,10 +9,11 @@ import { CallSummaryModal } from './components/CallSummaryModal';
 import { UserDashboard } from './components/UserDashboard';
 import { PipWidget } from './components/PipWidget';
 import { SignSandbox } from './components/SignSandbox';
+import { AccessibilitySettings } from './components/AccessibilitySettings';
 
 export type UserMode = 'deaf' | 'hearing';
 
-export type AppView = 'landing' | 'dashboard' | 'calibration' | 'call' | 'learn' | 'practice' | 'sandbox' | 'studio' | 'summary';
+export type AppView = 'landing' | 'dashboard' | 'calibration' | 'call' | 'learn' | 'practice' | 'sandbox' | 'studio' | 'summary' | 'accessibility';
 
 export interface CallConfig {
   roomId: string;
@@ -68,6 +69,8 @@ export default function App() {
         <SignSandbox onBack={() => handleNavigate('dashboard')} />
       ) : currentView === 'studio' ? (
         <GestureStudio onBack={() => handleNavigate('dashboard')} onNavigate={handleNavigate} />
+      ) : currentView === 'accessibility' ? (
+        <AccessibilitySettings onBack={() => handleNavigate('dashboard')} />
       ) : currentView === 'summary' ? (
         <CallSummaryModal
           isOpen={true}
